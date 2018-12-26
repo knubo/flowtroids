@@ -5,9 +5,13 @@
     <title>Flowtroids</title>
     <script src="js/pixi.min.js"></script>
     <script src="js/game.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.18/peer.min.js"></script>
 </head>
 
-<body>
-<script type="application/javascript">game();</script>
+<body onload="game()">
+
+<div id="connect" style="position:absolute;z-index: 300;top:300px;left:100px;">
+    <input id="peerid"><input type="button" value="connect" onclick="connect()"> PeerId: <div id="mypeerid" style="background:white;color:black;"></div>
+</div>
 </body>
 </html>
