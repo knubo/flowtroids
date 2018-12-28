@@ -6,8 +6,8 @@ var otherShips = {};
 var particles = [];
 let particlesGraphics;
 
-var conn = null;
-var peerId = null;
+var connections = [];
+var peer;
 
 function makeShip(color) {
 
@@ -16,18 +16,18 @@ function makeShip(color) {
     ship.lineStyle(1, color, 1);
     ship.moveTo(10, 0);
     ship.lineTo(0, 20);
-    ship.lineTo(10,15);
-    ship.lineTo(20,20);
+    ship.lineTo(10, 15);
+    ship.lineTo(20, 20);
     ship.lineTo(10, 0);
 
     let texture = ship.generateCanvasTexture();
     let sprite = new PIXI.Sprite(texture);
-    sprite.pivot = new PIXI.Point (10,15);
+    sprite.pivot = new PIXI.Point(10, 15);
 
     sprite.vx = 0;
     sprite.vy = 0;
     sprite.vrotate = 0;
-    sprite.speed=0;
+    sprite.speed = 0;
     return sprite;
 }
 
@@ -35,33 +35,61 @@ function makeShip(color) {
 function drawOtherShip(data) {
     let parts = data.split(",");
 
-    if(parts[0] == "P") {
-        particles.push({"x": parseFloat(parts[1]), "y": parseFloat(parts[2]), "vx": parseFloat(parts[3]), "vy": parseFloat(parts[4]), "c" : 40});
+    let command = parts.shift();
+
+    if (command == "P") {
+        particles.push({
+            "x": parseFloat(parts[0]),
+            "y": parseFloat(parts[1]),
+            "vx": parseFloat(parts[2]),
+            "vy": parseFloat(parts[3]),
+            "c": 40
+        });
         return;
     }
 
-    let sprite = otherShips[parts[1]];
+    if (command == "C") {
+        console.log("Connections seen:" + data);
+        let foundMissingCon = false;
 
-    if(!sprite) {
+        parts.forEach(function (id) {
+            if (!peer.connections[id] && id != peer.id) {
+                console.log("Connecting also to " + id + " as different than " + peer.id);
+                connectWithId(id);
+                foundMissingCon = true;
+            }
+        });
+
+        if (foundMissingCon) {
+            broadcastConnections();
+        }
+
+        return;
+    }
+
+
+    let sprite = otherShips[parts[0]];
+
+    if (!sprite) {
         sprite = makeShip(0xFF0000);
-        otherShips[parts[1]] = sprite;
+        otherShips[parts[0]] = sprite;
 
         app.stage.addChild(sprite);
     }
 
-    sprite.x = parseFloat(parts[2]);
-    sprite.y = parseFloat(parts[3]);
-    sprite.rotation = parseFloat(parts[4]);
+    sprite.x = parseFloat(parts[1]);
+    sprite.y = parseFloat(parts[2]);
+    sprite.rotation = parseFloat(parts[3]);
 }
 
 
 function game() {
 
-    app = new PIXI.Application({width: window.innerWidth-20, height: window.innerHeight-20});
+    app = new PIXI.Application({width: window.innerWidth - 20, height: window.innerHeight - 20});
 
     document.body.appendChild(app.view);
-    window.addEventListener("resize", function() {
-        app.renderer.resize(window.innerWidth-20, window.innerHeight-20);
+    window.addEventListener("resize", function () {
+        app.renderer.resize(window.innerWidth - 20, window.innerHeight - 20);
     });
 
     ship = makeShip(0xFFFFFF);
@@ -80,36 +108,77 @@ function game() {
     document.addEventListener('keyup', onKeyUp);
 
     document.getElementById("connect").style.visibility = "hidden";
+
+    connect(null);
 }
 
-function connect() {
-    let peer = new Peer(null);
+function connectWithId(connid) {
+    console.log("Opening to " + connid);
+    let conn = peer.connect(connid);
+
+    connections.push(conn);
+
+    conn.on('data', function (data) {
+        drawOtherShip(data);
+    });
+}
+
+function broadcastConnections() {
+
+    let ids = Object.keys(peer.connections).join(",");
+
+    connections.forEach(function (c) {
+        c.send("C," + ids + "," + peer.id);
+    });
+}
+
+function getParam(name) {
+    if (name = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search))
+        return decodeURIComponent(name[1]);
+}
+
+
+function connect(peerId) {
+    peer = new Peer(peerId);
 
     console.log("Pre connect");
-   // conn = peer.connect("knubo-flowtroids");
 
-    console.log("Connect called");
 
-    peer.on('open', function(id) {
-        peerId = id;
+    peer.on('open', function (id) {
         document.getElementById("mypeerid").innerHTML = id;
-        console.log("Connected with:"+id);
+        console.log("Connected with:" + id);
+
+        window.history.pushState("peerId", "Title", window.location + "?peerid=" + id);
+
     });
 
-    let connid = document.getElementById("peerid").value;
+    let connid = getParam("peerid");
 
-    if(connid) {
-        conn = peer.connect(connid);
-
-        conn.on('data', function(data) {
-           drawOtherShip(data);
-        });
+    if (!connid) {
+        connid = document.getElementById("peerid").value;
     }
 
-    peer.on('connection', function(c) {
-        console.log("Connect on peer "+c);
-        conn = c;
-        conn.on('data', function(data) {
+    if (connid) {
+        connectWithId(connid);
+    }
+
+
+    peer.on('error', function (err) {
+        if (peer) {
+            peer.destroy();
+        }
+        connect(null);
+    });
+
+    peer.on('connection', function (c) {
+        console.log("Connect on peer " + c.id);
+
+
+        connections.push(c);
+
+        broadcastConnections();
+
+        c.on('data', function (data) {
             drawOtherShip(data);
         });
     });
@@ -119,7 +188,7 @@ function addParticles() {
     let vx = Math.cos(ship.rotation + 1.57075);
     let vy = Math.sin(ship.rotation + 1.57075);
 
-    for(let i = 0; i < 5; i++) {
+    for (let i = 0; i < 5; i++) {
         let randx = 1 - (Math.random() * 2);
         let randy = 1 - (Math.random() * 2);
 
@@ -127,11 +196,12 @@ function addParticles() {
         var y = ship.y - ship.vy + randy;
         var vx2 = ship.vx + 3 * vx + randx;
         var vy2 = ship.vy + 3 * vy + randy;
-        particles.push({"x": x, "y": y, "vx": vx2, "vy": vy2, "c": 40});
+        var items = {"x": x, "y": y, "vx": vx2, "vy": vy2, "c": 40};
+        particles.push(items);
 
-        if (conn) {
+        connections.forEach(function (conn) {
             conn.send("P," + x + "," + y + "," + vx2 + "," + vy2);
-        }
+        });
     }
 }
 
@@ -144,22 +214,22 @@ function gameLoop(delta) {
 
     ship.rotation += ship.vrotate;
 
-    if(ship.x < 0) {
+    if (ship.x < 0) {
         ship.x = window.innerWidth;
     }
 
-    if(ship.x > window.innerWidth) {
+    if (ship.x > window.innerWidth) {
         ship.x = 0;
     }
 
-    if(ship.y < 0) {
+    if (ship.y < 0) {
         ship.y = window.innerHeight;
     }
-    if(ship.y > window.innerHeight) {
+    if (ship.y > window.innerHeight) {
         ship.y = 0;
     }
 
-    if(ship.speed) {
+    if (ship.speed) {
         ship.vx = ship.vx + Math.cos(ship.rotation - 1.57075);
         ship.vy = ship.vy + Math.sin(ship.rotation - 1.57075);
         addParticles();
@@ -167,16 +237,18 @@ function gameLoop(delta) {
 
     animatePixels();
 
-    if(conn) {
-        conn.send("S,"+peerId+","+ship.x+","+ship.y+","+ship.rotation);
+    if (Math.abs(ship.vx) > 0.1 || Math.abs(ship.vy) > 0.1 || ship.speed) {
+        connections.forEach(function (conn) {
+            conn.send("S," + peer.id + "," + ship.x + "," + ship.y + "," + ship.rotation);
+        });
     }
+
 }
 
 function animatePixels() {
     particlesGraphics.clear();
 
-
-    particles.forEach(function(p) {
+    particles.forEach(function (p) {
         p.x += p.vx;
         p.y += p.vy;
         p.c -= 1;
@@ -189,18 +261,20 @@ function animatePixels() {
         particlesGraphics.lineStyle(1, PIXI.utils.rgb2hex([c, c, c]), 1);
 
         particlesGraphics.moveTo(p.x, p.y);
-        particlesGraphics.lineTo(p.x+1, p.y+1);
+        particlesGraphics.lineTo(p.x + 1, p.y + 1);
     });
-    particles = particles.filter(function(p) {return p.c > 0});
+    particles = particles.filter(function (p) {
+        return p.c > 0
+    });
 
 }
 
 function findBreak(d) {
-    if(d > 1) {
+    if (d > 1) {
         return 1;
     }
 
-    if(d < -1) {
+    if (d < -1) {
         return -1;
     }
 
@@ -235,8 +309,8 @@ function onKeyDown(key) {
     }
 
 //    console.log(key.keyCode);
-    if(key.keyCode === 9) {
-        if(document.getElementById("connect").style.visibility === "hidden") {
+    if (key.keyCode === 9) {
+        if (document.getElementById("connect").style.visibility === "hidden") {
             document.getElementById("connect").style.visibility = "visible";
         } else {
             document.getElementById("connect").style.visibility = "hidden";
