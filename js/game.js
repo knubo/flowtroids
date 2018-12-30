@@ -1,10 +1,12 @@
 let app;
 let ship;
+let shipLocation = [0, 0];
 
 var otherShips = {};
 
 var particles = [];
 let particlesGraphics;
+let mapGraphics;
 
 var connections = [];
 var peer;
@@ -90,17 +92,21 @@ function game() {
     document.body.appendChild(app.view);
     window.addEventListener("resize", function () {
         app.renderer.resize(window.innerWidth - 20, window.innerHeight - 20);
+
     });
 
     ship = makeShip(0xFFFFFF);
 
     particlesGraphics = new PIXI.Graphics();
 
-    ship.x = 100;
-    ship.y = 100;
+    ship.x = Math.floor(window.innerWidth / 2);
+    ship.y = Math.floor(window.innerHeight / 2);
+    location[0] = 50;
+    location[1] = 50;
 
     app.stage.addChild(ship);
     app.stage.addChild(particlesGraphics);
+
 
     app.ticker.add(delta => gameLoop(delta));
 
@@ -109,10 +115,20 @@ function game() {
 
     document.getElementById("connect").style.visibility = "hidden";
 
-    connect(null);
+    // connect(null);
+
+    mapGraphics = new PIXI.Graphics();
+    app.stage.addChild(mapGraphics);
+
 }
 
 function connectWithId(connid) {
+
+    if (getParam("master")) {
+        console.log("Master - don't connect");
+        return;
+    }
+
     console.log("Opening to " + connid);
     let conn = peer.connect(connid);
 
@@ -133,7 +149,7 @@ function broadcastConnections() {
 }
 
 function getParam(name) {
-    if (name = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search))
+    if (name = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(shipLocation.search))
         return decodeURIComponent(name[1]);
 }
 
@@ -143,24 +159,26 @@ function connect(peerId) {
 
     console.log("Pre connect");
 
-
-    peer.on('open', function (id) {
-        document.getElementById("mypeerid").innerHTML = id;
-        console.log("Connected with:" + id);
-
-        window.history.pushState("peerId", "Title", window.location + "?peerid=" + id);
-
-    });
-
     let connid = getParam("peerid");
 
     if (!connid) {
         connid = document.getElementById("peerid").value;
     }
 
+
     if (connid) {
         connectWithId(connid);
     }
+
+    peer.on('open', function (id) {
+        document.getElementById("mypeerid").innerHTML = id;
+        console.log("Connected with:" + id);
+
+        if (window.location.search.indexOf("peerid") == -1) {
+            window.history.pushState("peerId", "Title", window.location + "?peerid=" + id + "&master=true");
+        }
+
+    });
 
 
     peer.on('error', function (err) {
@@ -192,8 +210,8 @@ function addParticles() {
         let randx = 1 - (Math.random() * 2);
         let randy = 1 - (Math.random() * 2);
 
-        var x = ship.x - ship.vx + randx;
-        var y = ship.y - ship.vy + randy;
+        var x = shipLocation[0] - ship.vx + randx;
+        var y = shipLocation[1] - ship.vy + randy;
         var vx2 = ship.vx + 3 * vx + randx;
         var vy2 = ship.vy + 3 * vy + randy;
         var items = {"x": x, "y": y, "vx": vx2, "vy": vy2, "c": 40};
@@ -206,27 +224,29 @@ function addParticles() {
 }
 
 function gameLoop(delta) {
-    ship.x = ship.x + ship.vx;
-    ship.y = ship.y + ship.vy;
+    shipLocation[0] = shipLocation[0] + ship.vx;
+    shipLocation[1] = shipLocation[1] + ship.vy;
 
     ship.vx = ship.vx - findBreak(ship.vx / 50);
     ship.vy = ship.vy - findBreak(ship.vy / 50);
 
+    ship.vy = ship.vy + 0.1;
+
     ship.rotation += ship.vrotate;
 
-    if (ship.x < 0) {
-        ship.x = window.innerWidth;
+    if (shipLocation[0] < 0) {
+        shipLocation[0] = 30 * 100;
     }
 
-    if (ship.x > window.innerWidth) {
-        ship.x = 0;
+    if (shipLocation[0] > 30 * 100) {
+        shipLocation[0] = 0;
     }
 
-    if (ship.y < 0) {
-        ship.y = window.innerHeight;
+    if (shipLocation[1] < 0) {
+        shipLocation[1] = 30 * 100;
     }
-    if (ship.y > window.innerHeight) {
-        ship.y = 0;
+    if (shipLocation[1] > 30 * 100) {
+        shipLocation[1] = 0;
     }
 
     if (ship.speed) {
@@ -239,10 +259,12 @@ function gameLoop(delta) {
 
     if (Math.abs(ship.vx) > 0.1 || Math.abs(ship.vy) > 0.1 || ship.speed) {
         connections.forEach(function (conn) {
-            conn.send("S," + peer.id + "," + ship.x + "," + ship.y + "," + ship.rotation);
+            conn.send("S," + peer.id + "," + shipLocation[0] + "," + shipLocation[1] + "," + ship.rotation);
         });
     }
 
+    mapGraphics.clear();
+    drawMap(mapGraphics, shipLocation);
 }
 
 function animatePixels() {
@@ -256,12 +278,14 @@ function animatePixels() {
         p.vx = p.vx - findBreak(p.vx / 50);
         p.vy = p.vy - findBreak(p.vy / 50);
 
-
         let c = p.c < 7 ? 0.3 : 1;
         particlesGraphics.lineStyle(1, PIXI.utils.rgb2hex([c, c, c]), 1);
 
-        particlesGraphics.moveTo(p.x, p.y);
-        particlesGraphics.lineTo(p.x + 1, p.y + 1);
+        let drawX = (window.innerWidth / 2) + (p.x - shipLocation[0]);
+        let drawY = (window.innerHeight / 2) +  (p.y - shipLocation[1]);
+
+        particlesGraphics.moveTo(drawX, drawY);
+        particlesGraphics.lineTo(drawX + 1, drawY + 1);
     });
     particles = particles.filter(function (p) {
         return p.c > 0
