@@ -1,6 +1,6 @@
 let app;
 let ship;
-let shipLocation = [0, 0];
+let shipLocation = [0, 0, 0];
 
 var otherShips = {};
 
@@ -149,7 +149,7 @@ function broadcastConnections() {
 }
 
 function getParam(name) {
-    if (name = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(shipLocation.search))
+    if (name = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search))
         return decodeURIComponent(name[1]);
 }
 
@@ -227,6 +227,7 @@ function gameLoop(delta) {
     shipLocation[0] = shipLocation[0] + ship.vx;
     shipLocation[1] = shipLocation[1] + ship.vy;
 
+
     ship.vx = ship.vx - findBreak(ship.vx / 50);
     ship.vy = ship.vy - findBreak(ship.vy / 50);
 
@@ -234,9 +235,18 @@ function gameLoop(delta) {
 
     ship.rotation += ship.vrotate;
 
+    if(ship.rotation < 0) {
+        ship.rotation += 3.14156 * 2;
+    }
+    if(ship.rotation > 3.14156 * 2) {
+        ship.rotation -= 3.14156 * 2;
+    }
+
     if (shipLocation[0] < 0) {
         shipLocation[0] = 30 * 100;
     }
+
+    shipLocation[2] = ship.rotation;
 
     if (shipLocation[0] > 30 * 100) {
         shipLocation[0] = 0;

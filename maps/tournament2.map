@@ -46,10 +46,10 @@ shotsgravity : yes
 
 mapData: \multiline: EndOfMapdata
                  xxxxxxxxxxs        qxxxxxx                                         xxx#s           
-                 xxxxxxxxxx        xxxxxxxxxw                                                       
+                 xxxxxxxxxx        xxxxxxxxxw
                   axxxxxxs        qxxxxxxxxxxx                                                      
-                                 qxxxxxxxxxxxxw                                                     
-                                qxxxxxxxxxxxxxxw              xxxxw                                 
+                                 qxxxxxxxxxxxxw
+                                qxxxxxxxxxxxxxxw              xxxxw
                                xxxxxxxxxxxxxxxxx            qxxxxxxxxw                              
                                axxxxxxxxxxxxxxxx           xxxxxxxxxxxw                             
                                 axxxxxxxxxxxxxxx          qxxxxxxxxxxxx                             
