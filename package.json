@@ -1,0 +1,28 @@
+{
+  "name": "flowtroids",
+  "build": "webpack",
+  "main": "index.js",
+  "version": "1.0.0",
+  "description": "A xpilot like game in the browser",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack --mode development",
+    "build": "webpack --mode production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knubo/flowtroids.git"
+  },
+  "keywords": [
+    "game"
+  ],
+  "author": "Knubo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/knubo/flowtroids/issues"
+  },
+  "homepage": "https://github.com/knubo/flowtroids#readme",
+  "dependencies": {
+    "collisions": "^2.0.13"
+  }
+}
