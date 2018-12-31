@@ -1,7 +1,9 @@
-
 var mapdata;
 var rows;
 let scale = 30;
+
+var debugCrash = false;
+var canvas;
 
 function drawMap(g, trans) {
 
@@ -27,12 +29,9 @@ function drawMap(g, trans) {
 }
 
 
-function makeShipPolygon(system, rotation) {
-    return system.createPolygon(px + 10, py + 15,
-        [[px + 10, py + 0],
-            [px + 0, py + 20],
-            [px + 10, py + 15],
-            [px + 20, py + 20]],
+function makeShipPolygon(colSystem, px, py, rotation) {
+    return colSystem.createPolygon(px + 10, py + 15,
+        [ [0, -15],[-10, 5], [0,  0], [10,  5]],
         rotation);
 }
 
@@ -46,6 +45,9 @@ function parseMapData(graphics, trans) {
 
     let collision = false;
 
+    let colSystem = document.collision();
+    let shipPoly = makeShipPolygon(colSystem, window.innerWidth / 2, window.innerHeight / 2, trans[2]);
+    
     graphics.lineStyle(1, 0xFFFFFF, 1);
 
     for (let row = -1; row < rows.length; row++) {
@@ -93,15 +95,14 @@ function parseMapData(graphics, trans) {
 
             switch (c) {
                 case 'x':
-                    if (!collision && testForCollision) {
-
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                    if (testForCollision) {
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, 0], [scale, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.drawRect(px + col * scale, py + row * scale, scale, scale);
                     break;
                 case 'a':
                     let t = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale];
-                    if (!collision && testForCollision) {
+                    if (testForCollision) {
 
 //                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t), satResponse);
                         if (collision) graphics.lineStyle(1, 0xFF0000, 1);
@@ -110,7 +111,7 @@ function parseMapData(graphics, trans) {
                     break;
                 case 'q':
                     let t2 = [px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale + scale, py + row * scale];
-                    if (!collision && testForCollision) {
+                    if (testForCollision) {
 //                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t2), satResponse);
                         if (collision) graphics.lineStyle(1, 0xFF0000, 1);
                     }
@@ -118,7 +119,7 @@ function parseMapData(graphics, trans) {
                     break;
                 case 's':
                     var t3 = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale];
-                    if (!collision && testForCollision) {
+                    if (testForCollision) {
 //                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t3), satResponse);
                         if (collision) graphics.lineStyle(1, 0xFF0000, 1);
                     }
@@ -126,14 +127,14 @@ function parseMapData(graphics, trans) {
                     break;
                 case 'w':
                     var t4 = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale];
-                    if (!collision && testForCollision) {
+                    if (testForCollision) {
 //                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t4), satResponse);
                         if (collision) graphics.lineStyle(1, 0xFF0000, 1);
                     }
                     graphics.drawPolygon(t4);
                     break;
                 case '#':
-                    if (!collision && testForCollision) {
+                    if (testForCollision) {
 //                        collision = SAT.testPolygonPolygon(shipPolygon, new SAT.Box(new SAT.Vector(px + col * scale, py + row * scale), scale, scale).toPolygon(), satResponse);
                         if (collision) graphics.lineStyle(1, 0xFF0000, 1);
                     }
@@ -151,7 +152,34 @@ function parseMapData(graphics, trans) {
 
             }
         }
+    }
+    const potentials = shipPoly.potentials();
+    const result = colSystem.createResult();
+    
+    for(const wall of potentials) {
+	if(shipPoly.collides(wall, result)) {
+            console.log("crash");
+	}
+    }
 
+    if(debugCrash) {
+	if(!canvas) {
+	   canvas  = document.createElement('canvas');
+    	    document.body.appendChild(canvas);
+
+	    canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+	}
+       const context = canvas.getContext('2d');
+       context.clearRect(0, 0, canvas.width, canvas.height);
+
+       context.strokeStyle = '#FFFFFF';
+       context.rect(120, 120, 130, 130);
+       context.fill();
+
+       context.beginPath();
+       colSystem.draw(context);
+       context.stroke();
     }
     return collision;
 }

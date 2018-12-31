@@ -1,8 +1,7 @@
 import Collisions from 'collisions';
 
-var collision = new Collisions();
-
-console.log("Collision initiated");
-document.collision = collision;
+document.collision = function() {
+    return new Collisions();
+}
 console.log("set in document");
 
