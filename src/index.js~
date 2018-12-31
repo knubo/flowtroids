@@ -1,4 +1,0 @@
-simport Collisions from 'collisions';
- 
-// Create the collision system
-var collision = new Collisions();
