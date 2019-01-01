@@ -6,6 +6,7 @@ var debugCrash = false;
 var canvas;
 
 var shipMaxFuel;
+var shipMaxBullets;
 
 var BX = window.innerWidth / 2;
 var BY = window.innerHeight / 2;
@@ -18,10 +19,12 @@ function drawMap(g, trans, particles) {
         xmlHttp.send(null);
         mapdata = xmlHttp.responseText;
 
-        let fuelMatch = mapdata.match("initialfuel:(.*)");
+        let fuelMatch = mapdata.match(/initialfuel.*:(.*)/);
+        shipMaxFuel = fuelMatch[1].trim();
 
-	shipMaxFuel = fuelMatch[1];
-	
+        let maxBullets = mapdata.match(/maxplayershots.*:(.*)/);
+        shipMaxBullets = maxBullets[1].trim();
+
         let regexp = RegExp('.*mapData:.*multiline: (.*)', 'gm');
         let match = regexp.exec(mapdata);
         let delimiter = match[1];
@@ -40,7 +43,7 @@ function drawMap(g, trans, particles) {
 
 function makeShipPolygon(colSystem, px, py, rotation) {
     return colSystem.createPolygon(px, py,
-        [ [0, -15],[-10, 5], [0,  0], [10,  5]],
+        [[0, -15], [-10, 5], [0, 0], [10, 5]],
         rotation);
 }
 
@@ -56,42 +59,42 @@ function parseMapData(graphics, trans, particles) {
 
     let colSystem = document.collision();
     let shipPoly = makeShipPolygon(colSystem, window.innerWidth / 2, window.innerHeight / 2, trans[2]);
-    
+
     graphics.lineStyle(1, 0xFFFFFF, 1);
 
 
     let greens = {};
-    particles.forEach(function (p) {       	
-	let rowP = Math.floor( (p.y + (window.innerHeight / 2)) / scale);
-        let colP = Math.floor( (p.x + (window.innerWidth / 2)) / scale);
+    particles.forEach(function (p) {
+        let rowP = Math.floor((p.y + (window.innerHeight / 2)) / scale);
+        let colP = Math.floor((p.x + (window.innerWidth / 2)) / scale);
 
-        if(rowP > rows.length) {
+        if (rowP > rows.length) {
             rowP -= rows.length;
-	}
-	if(rowP < 0) {
-	    rowP += rows.length;
-	}
-	
-	if(colP > rows[0].length) {
-            colP -= rows[0].length;
-	}
-        if(colP < 0) {
-            colP += rows[0].length;
-	}
-	
-	if(rows[rowP] && colP > 0 && rows[rowP].charAt(colP) != ' ' && p.c > 3) {
-    	    greens[rowP+"-"+colP] = 1;
-	    p.c = 3;
-	}
+        }
+        if (rowP < 0) {
+            rowP += rows.length;
+        }
 
-	if(p.b) {
+        if (colP > rows[0].length) {
+            colP -= rows[0].length;
+        }
+        if (colP < 0) {
+            colP += rows[0].length;
+        }
+
+        if (rows[rowP] && colP > 0 && rows[rowP].charAt(colP) != ' ' && p.c > 3) {
+            greens[rowP + "-" + colP] = 1;
+            p.c = 3;
+        }
+
+        if (p.b) {
             //TODO bullet collision
             //colSystem.createPolygon(bx, by, [[0,0], [1,0], [1,1], [0,1]]);
-	}
+        }
 
     });
 
-    
+
     for (let row = -1; row < rows.length; row++) {
 
         let lRow = row + rowT;
@@ -117,59 +120,59 @@ function parseMapData(graphics, trans, particles) {
             }
 
             let c = colData.charAt(lCol);
-	    
+
             if (col * scale > window.innerWidth || row * scale > window.innerHeight) {
                 continue;
             }
 
             graphics.lineStyle(1, 0xFFFFFF, 1);
 
-            if(greens[lRow+"-"+lCol]) {
+            if (greens[lRow + "-" + lCol]) {
 //                graphics.lineStyle(1, 0xFF00FF, 1);
-	    }
-	    
+            }
+
             let testForCollision = false;
 
 
-            if (px + col * scale > (window.innerWidth / 2) - scale*2 && px + col * scale < (window.innerWidth / 2) + scale &&
-                py + row * scale > (window.innerHeight / 2) - scale*2 && py + row * scale < (window.innerHeight / 2) + scale) {
+            if (px + col * scale > (window.innerWidth / 2) - scale * 2 && px + col * scale < (window.innerWidth / 2) + scale &&
+                py + row * scale > (window.innerHeight / 2) - scale * 2 && py + row * scale < (window.innerHeight / 2) + scale) {
                 testForCollision = true;
             }
 
             switch (c) {
                 case 'x':
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, 0], [scale, 0], [scale, scale], [0, scale]]);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [[0, 0], [scale, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.drawRect(px + col * scale, py + row * scale, scale, scale);
                     break;
                 case 'a':
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale, 0], [scale,scale] ]);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [[0, 0], [scale, 0], [scale, scale]]);
                     }
                     graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case 'q':
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale + scale, py + row * scale, [ [scale,0], [scale,scale], [0,scale] ]);
+                        colSystem.createPolygon(px + col * scale + scale, py + row * scale, [[scale, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.drawPolygon([px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale + scale, py + row * scale]);
                     break;
                 case 's': // 
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale, 0], [0, scale] ]);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [[0, 0], [scale, 0], [0, scale]]);
                     }
                     graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case 'w':
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale,scale], [0, scale] ]);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [[0, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case '#':
                     if (testForCollision) {
-                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, 0], [scale, 0], [scale, scale], [0, scale]]);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [[0, 0], [scale, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.beginFill(0x1111FF);
                     graphics.drawRect(px + col * scale, py + row * scale, scale, scale);
@@ -177,8 +180,8 @@ function parseMapData(graphics, trans, particles) {
                     break;
                 case '_':
                     if (testForCollision) {
-                        let platform = colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, scale], [scale, scale], [scale,scale-2], [0, scale-2]]);
-			platform.isAPlatform = true;
+                        let platform = colSystem.createPolygon(px + col * scale, py + row * scale, [[0, scale], [scale, scale], [scale, scale - 2], [0, scale - 2]]);
+                        platform.isAPlatform = true;
                     }
                     graphics.lineStyle(1, 0x11EE11, 1);
                     graphics.beginFill(0x11EE11);
@@ -192,31 +195,31 @@ function parseMapData(graphics, trans, particles) {
     }
     const potentials = shipPoly.potentials();
     const result = colSystem.createResult();
-    
-    for(const wall of potentials) {
-	if(shipPoly.collides(wall, result)) {
-  	    collision=wall.isAPlatform ? -1 : 1;
-	}
+
+    for (const wall of potentials) {
+        if (shipPoly.collides(wall, result)) {
+            collision = wall.isAPlatform ? -1 : 1;
+        }
     }
 
-    if(debugCrash) {
-	if(!canvas) {
-	   canvas  = document.createElement('canvas');
-    	    document.body.appendChild(canvas);
+    if (debugCrash) {
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            document.body.appendChild(canvas);
 
-	    canvas.width  = window.innerWidth;
+            canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-	}
-       const context = canvas.getContext('2d');
-       context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
-       context.strokeStyle = '#FFFFFF';
-       context.rect(120, 120, 130, 130);
-       context.fill();
+        context.strokeStyle = '#FFFFFF';
+        context.rect(120, 120, 130, 130);
+        context.fill();
 
-       context.beginPath();
-       colSystem.draw(context);
-       context.stroke();
+        context.beginPath();
+        colSystem.draw(context);
+        context.stroke();
     }
     return collision;
 }
