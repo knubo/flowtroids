@@ -5,7 +5,10 @@ let scale = 30;
 var debugCrash = false;
 var canvas;
 
-function drawMap(g, trans) {
+var BX = window.innerWidth / 2;
+var BY = window.innerHeight / 2;
+
+function drawMap(g, trans, particles) {
 
     if (!mapdata) {
         var xmlHttp = new XMLHttpRequest();
@@ -25,7 +28,7 @@ function drawMap(g, trans) {
         rows.pop();
     }
 
-    return parseMapData(g, trans);
+    return parseMapData(g, trans, particles);
 }
 
 
@@ -36,7 +39,7 @@ function makeShipPolygon(colSystem, px, py, rotation) {
 }
 
 
-function parseMapData(graphics, trans) {
+function parseMapData(graphics, trans, particles) {
 
     let rowT = Math.floor(trans[1] / scale);
     let colT = Math.floor(trans[0] / scale);
@@ -50,6 +53,39 @@ function parseMapData(graphics, trans) {
     
     graphics.lineStyle(1, 0xFFFFFF, 1);
 
+
+    let greens = {};
+    particles.forEach(function (p) {       	
+	let rowP = Math.floor( (p.y + (window.innerHeight / 2)) / scale);
+        let colP = Math.floor( (p.x + (window.innerWidth / 2)) / scale);
+
+        if(rowP > rows.length) {
+            rowP -= rows.length;
+	}
+	if(rowP < 0) {
+	    rowP += rows.length;
+	}
+	
+	if(colP > rows[0].length) {
+            colP -= rows[0].length;
+	}
+        if(colP < 0) {
+            colP += rows[0].length;
+	}
+	
+	if(rows[rowP] && colP > 0 && rows[rowP].charAt(colP) != ' ' && p.c > 3) {
+    	    greens[rowP+"-"+colP] = 1;
+	    p.c = 3;
+	}
+
+	if(p.b) {
+            //TODO bullet collision
+            //colSystem.createPolygon(bx, by, [[0,0], [1,0], [1,1], [0,1]]);
+	}
+
+    });
+
+    
     for (let row = -1; row < rows.length; row++) {
 
         let lRow = row + rowT;
@@ -75,21 +111,23 @@ function parseMapData(graphics, trans) {
             }
 
             let c = colData.charAt(lCol);
-
+	    
             if (col * scale > window.innerWidth || row * scale > window.innerHeight) {
                 continue;
             }
 
             graphics.lineStyle(1, 0xFFFFFF, 1);
 
+            if(greens[lRow+"-"+lCol]) {
+//                graphics.lineStyle(1, 0xFF00FF, 1);
+	    }
+	    
             let testForCollision = false;
 
 
             if (px + col * scale > (window.innerWidth / 2) - scale*2 && px + col * scale < (window.innerWidth / 2) + scale &&
                 py + row * scale > (window.innerHeight / 2) - scale*2 && py + row * scale < (window.innerHeight / 2) + scale) {
                 testForCollision = true;
-//                graphics.lineStyle(1, 0x00FF00, 1);
-
             }
 
             switch (c) {

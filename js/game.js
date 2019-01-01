@@ -81,8 +81,9 @@ function drawOtherShip(data) {
         app.stage.addChild(sprite);
     }
 
-    sprite.x = parseFloat(parts[1]);
-    sprite.y = parseFloat(parts[2]);
+    sprite.x = (window.innerWidth / 2) + ( parseFloat(parts[1]) - shipLocation[0]);
+    sprite.y = (window.innerHeight / 2) +  (parseFloat(parts[2]) - shipLocation[1]);
+
     sprite.rotation = parseFloat(parts[3]);
 }
 
@@ -124,7 +125,7 @@ function game() {
 
     document.getElementById("connect").style.visibility = "hidden";
 
-    // connect(null);
+//    connect(null);
 
     mapGraphics = new PIXI.Graphics();
     app.stage.addChild(mapGraphics);
@@ -210,6 +211,23 @@ function connect(peerId) {
         });
     });
 }
+
+function addBullet() {
+    let vx = Math.cos(ship.rotation - 1.57075);
+    let vy = Math.sin(ship.rotation - 1.57075);
+    var x = shipLocation[0] + vx * 10;
+    var y = shipLocation[1] + vy * 15;
+
+    var speed = 12;
+    
+    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": 250, "b":1};
+    particles.push(items);
+
+    connections.forEach(function (conn) {
+	conn.send("B," + x + "," + y + "," + vx2 + "," + vy2);
+    });
+}
+
 
 function addParticles() {
     let vx = Math.cos(ship.rotation + 1.57075);
@@ -299,7 +317,7 @@ function gameLoop(delta) {
 
     if(!gameStopped) {
        mapGraphics.clear();
-       let crash = drawMap(mapGraphics, shipLocation);
+	let crash = drawMap(mapGraphics, shipLocation, particles);
 
        if(crash == 1) {
   	   gameStopped = new Date();
@@ -333,9 +351,13 @@ function animatePixels() {
         p.y += p.vy;
         p.c -= 1;
 
-        p.vx = p.vx - findBreak(p.vx / 50);
-        p.vy = p.vy - findBreak(p.vy / 50);
-
+	if(!p.b) {
+          p.vx = p.vx - findBreak(p.vx / 50);
+          p.vy = p.vy - findBreak(p.vy / 50);
+	} else {
+	    p.vy = p.vy + 0.1;
+	}
+	
         let c = p.c < 7 ? 0.3 : 1;
         particlesGraphics.lineStyle(1, PIXI.utils.rgb2hex([c, c, c]), 1);
 
@@ -343,7 +365,8 @@ function animatePixels() {
         let drawY = (window.innerHeight / 2) +  (p.y - shipLocation[1]);
 
         particlesGraphics.moveTo(drawX, drawY);
-        particlesGraphics.lineTo(drawX + 1, drawY + 1);
+	
+        particlesGraphics.lineTo(drawX + (p.b ? 2 : 1), drawY + (p.b ? 2 : 1));
     });
     particles = particles.filter(function (p) {
         return p.c > 0
@@ -378,6 +401,15 @@ function onKeyUp(key) {
 }
 
 function onKeyDown(key) {
+    if(gameStopped) {
+	if(new Date().getTime() - gameStopped.getTime() > 5000) {
+   	   gameStopped = null;
+	    respawn();
+	}
+        return;
+    }
+
+
     if (key.keyCode === 65 || key.keyCode === 37) {
         ship.vrotate = -0.2;
     }
@@ -390,7 +422,10 @@ function onKeyDown(key) {
         ship.speed = 1;
     }
 
-//    console.log(key.keyCode);
+    if(key.keyCode === 32) {
+	addBullet();
+    }
+    //console.log(key.keyCode);
     if (key.keyCode === 9) {
         if (document.getElementById("connect").style.visibility === "hidden") {
             document.getElementById("connect").style.visibility = "visible";
@@ -399,10 +434,5 @@ function onKeyDown(key) {
         }
     }
 
-    if(gameStopped && new Date().getTime() - gameStopped.getTime() > 5000) {
-	gameStopped = null;
-	respawn();
-	
-    }
 }
 
