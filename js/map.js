@@ -11,35 +11,55 @@ var shipMaxBullets;
 var BX = window.innerWidth / 2;
 var BY = window.innerHeight / 2;
 
+function init() {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET", "../maps/tournament2.map", false); // false for synchronous request
+    xmlHttp.send(null);
+    mapdata = xmlHttp.responseText;
+
+    let fuelMatch = mapdata.match(/initialfuel.*:(.*)/);
+    shipMaxFuel = fuelMatch[1].trim();
+
+    let maxBullets = mapdata.match(/maxplayershots.*:(.*)/);
+    shipMaxBullets = maxBullets[1].trim();
+
+    let regexp = RegExp('.*mapData:.*multiline: (.*)', 'gm');
+    let match = regexp.exec(mapdata);
+    let delimiter = match[1];
+
+    let content = mapdata.split(delimiter)[1];
+
+    rows = content.split("\n");
+
+    rows.shift();
+    rows.pop();
+}
+
 function drawMap(g, trans, particles) {
-
-    if (!mapdata) {
-        var xmlHttp = new XMLHttpRequest();
-        xmlHttp.open("GET", "../maps/tournament2.map", false); // false for synchronous request
-        xmlHttp.send(null);
-        mapdata = xmlHttp.responseText;
-
-        let fuelMatch = mapdata.match(/initialfuel.*:(.*)/);
-        shipMaxFuel = fuelMatch[1].trim();
-
-        let maxBullets = mapdata.match(/maxplayershots.*:(.*)/);
-        shipMaxBullets = maxBullets[1].trim();
-
-        let regexp = RegExp('.*mapData:.*multiline: (.*)', 'gm');
-        let match = regexp.exec(mapdata);
-        let delimiter = match[1];
-
-        let content = mapdata.split(delimiter)[1];
-
-        rows = content.split("\n");
-
-        rows.shift();
-        rows.pop();
-    }
 
     return parseMapData(g, trans, particles);
 }
 
+function randomOpenLocation() {
+    if (!rows) {
+        return [0, 0, 0];
+    }
+
+    var row = Math.floor(Math.random() * (rows.length) - 2) + 1;
+
+    let rowData = rows[row];
+    let col = Math.floor(Math.random() * (rowData.length - 2)) + 1;
+
+    for (let i = row - 1; i < row + 1; i++) {
+        rowData = rows[row];
+
+        if (rowData.charAt(col) != ' ' && rowData.charAt(col - 1) != ' ' && rowData.charAt(col + 1) != ' ') {
+            return randomOpenLocation();
+        }
+    }
+    return [(col * scale) - window.innerWidth / 2, (row * scale) - window.innerHeight / 2, 0];
+
+}
 
 function makeShipPolygon(colSystem, px, py, rotation) {
     return colSystem.createPolygon(px, py,
@@ -223,3 +243,5 @@ function parseMapData(graphics, trans, particles) {
     }
     return collision;
 }
+
+init();

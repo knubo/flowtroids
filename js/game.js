@@ -96,7 +96,7 @@ function respawn() {
     ship.vy = 0;
     ship.rotation = 0;
     ship.visible = true;
-    shipLocation = [0, 0, 0];
+    shipLocation = randomOpenLocation();
 
     if (shipMaxFuel > 0) {
         ship.fuel = shipMaxFuel;
