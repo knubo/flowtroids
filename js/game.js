@@ -8,6 +8,7 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
+let gravity = 0.0;
 
 var connections = [];
 var peer;
@@ -44,17 +45,6 @@ function drawOtherShip(data) {
 
     let command = parts.shift();
 
-    if (command == "P") {
-        particles.push({
-            "x": parseFloat(parts[0]),
-            "y": parseFloat(parts[1]),
-            "vx": parseFloat(parts[2]),
-            "vy": parseFloat(parts[3]),
-            "c": 40
-        });
-        return;
-    }
-
     if (command == "C") {
         console.log("Connections seen:" + data);
         let foundMissingCon = false;
@@ -84,8 +74,11 @@ function drawOtherShip(data) {
         app.stage.addChild(sprite);
     }
 
-    sprite.x = (window.innerWidth / 2) + ( parseFloat(parts[1]) - shipLocation[0]);
-    sprite.y = (window.innerHeight / 2) + (parseFloat(parts[2]) - shipLocation[1]);
+    sprite.acutalX = parseFloat(parts[1]);
+    sprite.actualY = parseFloat(parts[2]);
+
+    sprite.x = (sprite.acutalX - shipLocation[0]);
+    sprite.y = (sprite.actualY - shipLocation[1]);
 
     sprite.rotation = parseFloat(parts[3]);
 }
@@ -132,7 +125,7 @@ function game() {
 
     document.getElementById("connect").style.visibility = "hidden";
 
-//    connect(null);
+    connect(null);
 
     mapGraphics = new PIXI.Graphics();
     app.stage.addChild(mapGraphics);
@@ -257,7 +250,7 @@ function addParticles() {
         particles.push(items);
 
         connections.forEach(function (conn) {
-            conn.send("P," + x + "," + y + "," + vx2 + "," + vy2);
+            conn.send("P," + (x+ window.innerWidth / 2) + "," + (y+window.innerHeight / 2) + "," + vx2 + "," + vy2);
         });
     }
 }
@@ -285,7 +278,7 @@ function gameLoop(delta) {
         ship.vx = ship.vx - findBreak(ship.vx / 50);
         ship.vy = ship.vy - findBreak(ship.vy / 50);
 
-        ship.vy = ship.vy + 0.1;
+        ship.vy = ship.vy + gravity;
 
         ship.rotation += ship.vrotate;
 
@@ -324,11 +317,11 @@ function gameLoop(delta) {
 
 
     animatePixels();
-
+    drawOtherShips();
 
     if (!gameStopped && (Math.abs(ship.vx) > 0.1 || Math.abs(ship.vy) > 0.1 || ship.speed)) {
         connections.forEach(function (conn) {
-            conn.send("S," + peer.id + "," + shipLocation[0] + "," + shipLocation[1] + "," + ship.rotation);
+            conn.send("S," + peer.id + "," + (shipLocation[0] + window.innerWidth / 2) + "," + (shipLocation[1] + window.innerHeight / 2) + "," + ship.rotation);
         });
     }
 
@@ -383,6 +376,16 @@ function addExplodingShip() {
         particles.push(items);
     }
 
+}
+
+function drawOtherShips() {
+    let ships = Object.values(otherShips);
+
+    ships.forEach(function (sprite) {
+        sprite.x = (sprite.acutalX - shipLocation[0]);
+        sprite.y = (sprite.actualY - shipLocation[1]);
+
+    });
 }
 
 function animatePixels() {
