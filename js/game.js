@@ -8,7 +8,7 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
-let gravity = 0.0;
+let gravity = 0.1;
 
 var connections = [];
 var peer;
