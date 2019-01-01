@@ -5,6 +5,8 @@ let scale = 30;
 var debugCrash = false;
 var canvas;
 
+var shipMaxFuel;
+
 var BX = window.innerWidth / 2;
 var BY = window.innerHeight / 2;
 
@@ -16,6 +18,10 @@ function drawMap(g, trans, particles) {
         xmlHttp.send(null);
         mapdata = xmlHttp.responseText;
 
+        let fuelMatch = mapdata.match("initialfuel:(.*)");
+
+	shipMaxFuel = fuelMatch[1];
+	
         let regexp = RegExp('.*mapData:.*multiline: (.*)', 'gm');
         let match = regexp.exec(mapdata);
         let delimiter = match[1];

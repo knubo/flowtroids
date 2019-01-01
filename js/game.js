@@ -24,6 +24,7 @@ function makeShip(color) {
     ship.lineTo(20, 20);
     ship.lineTo(10, 0);
 
+    
     let texture = ship.generateCanvasTexture();
     let sprite = new PIXI.Sprite(texture);
     sprite.pivot = new PIXI.Point(10, 15);
@@ -32,6 +33,7 @@ function makeShip(color) {
     sprite.vy = 0;
     sprite.vrotate = 0;
     sprite.speed = 0;
+    sprite.fuel = 9999999;
     return sprite;
 }
 
@@ -94,6 +96,10 @@ function respawn() {
     ship.rotation = 0;
     ship.visible=true;
     shipLocation = [0, 0, 0];
+
+    if(shipMaxFuel > 0) {
+       ship.fuel = shipMaxFuel;
+    }
 }
 
 function game() {
@@ -274,6 +280,8 @@ function gameLoop(delta) {
 
     ship.rotation += ship.vrotate;
 
+    ship.fuel = ship.fuel - 0.1;
+       
     if(ship.rotation < 0) {
         ship.rotation += 3.14156 * 2;
     }
@@ -298,12 +306,14 @@ function gameLoop(delta) {
         shipLocation[1] = 0;
     }
 
-    if (ship.speed) {
+    if (ship.speed && ship.fuel > 0) {
         ship.vx = ship.vx + Math.cos(ship.rotation - 1.57075);
         ship.vy = ship.vy + Math.sin(ship.rotation - 1.57075);
         addParticles();
     }
    }
+
+
     
     animatePixels();
 
@@ -317,8 +327,12 @@ function gameLoop(delta) {
 
     if(!gameStopped) {
        mapGraphics.clear();
-	let crash = drawMap(mapGraphics, shipLocation, particles);
+       let crash = drawMap(mapGraphics, shipLocation, particles);
 
+	if(ship.fuel > 999999) {
+	    ship.fuel = shipMaxFuel;
+       }
+	
        if(crash == 1) {
   	   gameStopped = new Date();
 	   addExplodingShip();
@@ -329,6 +343,16 @@ function gameLoop(delta) {
        }
        
     }
+
+    mapGraphics.beginFill(0xDDDDDD);
+    mapGraphics.drawRect(window.innerWidth-10, 0, window.innerWidth - 40, 100);   
+    mapGraphics.endFill();
+
+    mapGraphics.beginFill(0x0000EE);
+    mapGraphics.drawRect(window.innerWidth - 12 + 98 - ((ship.fuel / shipMaxFuel) * 98), 2, window.innerWidth - 38, 98);   
+    mapGraphics.endFill();
+
+    
 }
 
 function addExplodingShip() {
