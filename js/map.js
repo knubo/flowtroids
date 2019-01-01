@@ -25,12 +25,12 @@ function drawMap(g, trans) {
         rows.pop();
     }
 
-    parseMapData(g, trans);
+    return parseMapData(g, trans);
 }
 
 
 function makeShipPolygon(colSystem, px, py, rotation) {
-    return colSystem.createPolygon(px + 10, py + 15,
+    return colSystem.createPolygon(px, py,
         [ [0, -15],[-10, 5], [0,  0], [10,  5]],
         rotation);
 }
@@ -88,8 +88,7 @@ function parseMapData(graphics, trans) {
             if (px + col * scale > (window.innerWidth / 2) - scale*2 && px + col * scale < (window.innerWidth / 2) + scale &&
                 py + row * scale > (window.innerHeight / 2) - scale*2 && py + row * scale < (window.innerHeight / 2) + scale) {
                 testForCollision = true;
-
-                graphics.lineStyle(1, 0x00FF00, 1);
+//                graphics.lineStyle(1, 0x00FF00, 1);
 
             }
 
@@ -101,48 +100,42 @@ function parseMapData(graphics, trans) {
                     graphics.drawRect(px + col * scale, py + row * scale, scale, scale);
                     break;
                 case 'a':
-                    let t = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale];
                     if (testForCollision) {
-
-//                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t), satResponse);
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale, 0], [scale,scale] ]);
                     }
-                    graphics.drawPolygon(t);
+                    graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case 'q':
-                    let t2 = [px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale + scale, py + row * scale];
                     if (testForCollision) {
-//                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t2), satResponse);
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                        colSystem.createPolygon(px + col * scale + scale, py + row * scale, [ [scale,0], [scale,scale], [0,scale] ]);
                     }
-                    graphics.drawPolygon(t2);
+                    graphics.drawPolygon([px + col * scale + scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale + scale, py + row * scale]);
                     break;
-                case 's':
-                    var t3 = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale];
+                case 's': // 
                     if (testForCollision) {
-//                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t3), satResponse);
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale, 0], [0, scale] ]);
                     }
-                    graphics.drawPolygon(t3);
+                    graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case 'w':
-                    var t4 = [px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale];
                     if (testForCollision) {
-//                        collision = SAT.testPolygonPolygon(shipPolygon, toSATPolygon(t4), satResponse);
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0,0], [scale,scale], [0, scale] ]);
                     }
-                    graphics.drawPolygon(t4);
+                    graphics.drawPolygon([px + col * scale, py + row * scale, px + col * scale + scale, py + row * scale + scale, px + col * scale, py + row * scale + scale, px + col * scale, py + row * scale]);
                     break;
                 case '#':
                     if (testForCollision) {
-//                        collision = SAT.testPolygonPolygon(shipPolygon, new SAT.Box(new SAT.Vector(px + col * scale, py + row * scale), scale, scale).toPolygon(), satResponse);
-                        if (collision) graphics.lineStyle(1, 0xFF0000, 1);
+                        colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, 0], [scale, 0], [scale, scale], [0, scale]]);
                     }
                     graphics.beginFill(0x1111FF);
                     graphics.drawRect(px + col * scale, py + row * scale, scale, scale);
                     graphics.endFill();
                     break;
                 case '_':
+                    if (testForCollision) {
+                        let platform = colSystem.createPolygon(px + col * scale, py + row * scale, [ [0, scale], [scale, scale], [scale,scale-2], [0, scale-2]]);
+			platform.isAPlatform = true;
+                    }
                     graphics.lineStyle(1, 0x11EE11, 1);
                     graphics.beginFill(0x11EE11);
                     graphics.drawRect(px + col * scale, py + row * scale + scale - 2, scale, 2);
@@ -158,7 +151,7 @@ function parseMapData(graphics, trans) {
     
     for(const wall of potentials) {
 	if(shipPoly.collides(wall, result)) {
-            console.log("crash");
+  	    collision=wall.isAPlatform ? -1 : 1;
 	}
     }
 

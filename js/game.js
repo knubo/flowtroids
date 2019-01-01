@@ -11,6 +11,8 @@ let mapGraphics;
 var connections = [];
 var peer;
 
+var gameStopped;
+
 function makeShip(color) {
 
     let ship = new PIXI.Graphics();
@@ -85,6 +87,14 @@ function drawOtherShip(data) {
 }
 
 
+function respawn() {
+    ship.vx = 0;
+    ship.vy = 0;
+    ship.rotation = 0;
+    ship.visible=true;
+    shipLocation = [0, 0, 0];
+}
+
 function game() {
 
     app = new PIXI.Application({width: window.innerWidth - 20, height: window.innerHeight - 20});
@@ -101,9 +111,8 @@ function game() {
 
     ship.x = Math.floor(window.innerWidth / 2);
     ship.y = Math.floor(window.innerHeight / 2);
-    location[0] = 50;
-    location[1] = 50;
-
+    respawn();
+    
     app.stage.addChild(ship);
     app.stage.addChild(particlesGraphics);
 
@@ -223,7 +232,19 @@ function addParticles() {
     }
 }
 
+let dx;
+
 function gameLoop(delta) {
+    dx += delta;
+
+    if(dx < 1.2) {
+	return;
+    }
+    dx = 0;
+
+    
+   if(!gameStopped) {
+
     shipLocation[0] = shipLocation[0] + ship.vx;
     shipLocation[1] = shipLocation[1] + ship.vy;
 
@@ -264,17 +285,44 @@ function gameLoop(delta) {
         ship.vy = ship.vy + Math.sin(ship.rotation - 1.57075);
         addParticles();
     }
-
+   }
+    
     animatePixels();
 
-    if (Math.abs(ship.vx) > 0.1 || Math.abs(ship.vy) > 0.1 || ship.speed) {
+    
+    if (!gameStopped && (Math.abs(ship.vx) > 0.1 || Math.abs(ship.vy) > 0.1 || ship.speed)) {
         connections.forEach(function (conn) {
             conn.send("S," + peer.id + "," + shipLocation[0] + "," + shipLocation[1] + "," + ship.rotation);
         });
     }
 
-    mapGraphics.clear();
-    drawMap(mapGraphics, shipLocation);
+
+    if(!gameStopped) {
+       mapGraphics.clear();
+       let crash = drawMap(mapGraphics, shipLocation);
+
+       if(crash == 1) {
+  	   gameStopped = new Date();
+	   addExplodingShip();
+       }
+	if(crash == -1) {
+	    ship.vx = -0;
+	    ship.vy = -0.1;    
+       }
+       
+    }
+}
+
+function addExplodingShip() {
+   var x = shipLocation[0];
+   var y = shipLocation[1];
+
+    ship.visible=false;
+    for(let i = 0; i < 100; i++) {
+        var items = {"x": x, "y": y, "vx": (Math.random() * 5) - 2.5, "vy":  (Math.random() * 5) - 2.5, "c": Math.random() * 100};
+        particles.push(items);
+    }
+    
 }
 
 function animatePixels() {
@@ -349,6 +397,12 @@ function onKeyDown(key) {
         } else {
             document.getElementById("connect").style.visibility = "hidden";
         }
+    }
+
+    if(gameStopped && new Date().getTime() - gameStopped.getTime() > 5000) {
+	gameStopped = null;
+	respawn();
+	
     }
 }
 
