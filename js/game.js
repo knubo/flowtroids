@@ -8,7 +8,8 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
-let gravity = 0.0;
+let gravity = 0.1;
+let bulletLife = 250;
 
 var connections = [];
 var peer;
@@ -64,17 +65,37 @@ function drawOtherShip(data) {
         return;
     }
 
-    if (command == "P") {
+    if (command == "P" || command == "B") {
         particles.push({
             "x": parseFloat(parts[0]),
             "y": parseFloat(parts[1]),
             "vx": parseFloat(parts[2]),
             "vy": parseFloat(parts[3]),
-            "c": 40
+	    "b" : command == "B" ? 1 : 0,
+            "c": command == "B" ? bulletLife : 40
         });
         return;
     }
 
+    if(command == "E") {
+        let sprite = otherShips[parts[0]];
+
+	if(sprite) {
+            sprite.visible = false;
+	}
+ 	
+	for (let i = 0; i < 100; i++) {
+          var items = {
+            "x": parseFloat(parts[1]),
+            "y": parseFloat(parts[2]),
+            "vx": (Math.random() * 5) - 2.5,
+            "vy": (Math.random() * 5) - 2.5,
+            "c": Math.random() * 100
+           };
+            particles.push(items);
+        }
+        return;
+    }
 
     let sprite = otherShips[parts[0]];
 
@@ -85,6 +106,7 @@ function drawOtherShip(data) {
         app.stage.addChild(sprite);
     }
 
+    sprite.visible = true;
     sprite.acutalX = parseFloat(parts[1]);
     sprite.actualY = parseFloat(parts[2]);
 
@@ -201,14 +223,14 @@ function connect(peerId) {
 
     });
 
-
+/*
     peer.on('error', function (err) {
         if (peer) {
             peer.destroy();
         }
         connect(null);
     });
-
+*/
     peer.on('connection', function (c) {
         console.log("Connect on peer " + c.id);
 
@@ -236,11 +258,11 @@ function addBullet() {
 
     var speed = 12;
 
-    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": 250, "b": 1};
+    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": bulletLife, "b": 1};
     particles.push(items);
 
     connections.forEach(function (conn) {
-        conn.send("B," + x + "," + y + "," + vx2 + "," + vy2);
+        conn.send("B," + x + "," + y + "," + (vx * speed) + "," + (vy*speed));
     });
 }
 
@@ -292,7 +314,9 @@ function gameLoop(delta) {
 
         ship.rotation += ship.vrotate;
 
-        ship.fuel = ship.fuel - 0.1;
+	if(ship.speed) {
+            ship.fuel = ship.fuel - 0.1;
+	}
 
         if (ship.rotation < 0) {
             ship.rotation += 3.14156 * 2;
@@ -385,6 +409,10 @@ function addExplodingShip() {
         };
         particles.push(items);
     }
+
+    connections.forEach(function (conn) {
+	conn.send("E," + peer.id + "," + (shipLocation[0] + window.innerWidth / 2) + "," + (shipLocation[1] + window.innerHeight / 2));
+    });
 
 }
 

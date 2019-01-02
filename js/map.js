@@ -2,6 +2,8 @@ var mapdata;
 var rows;
 let scale = 30;
 
+
+
 var debugCrash = false;
 var canvas;
 
