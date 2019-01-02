@@ -45,19 +45,23 @@ function randomOpenLocation() {
         return [0, 0, 0];
     }
 
-    var row = Math.floor(Math.random() * (rows.length) - 2) + 1;
+    var x = Math.random() * scale * rows[0].length;
+    var y = Math.random() * scale * rows.length;
+  
+    let rowT = Math.floor( (y + (window.innerHeight / 2)) / scale);
+    let colT = Math.floor( (x + (window.innerWidth / 2)) / scale);
+      
+    for(let i = -1; i < 3; i++) {
+	let checkR = adjust(rowT+i, rows.length);
 
-    let rowData = rows[row];
-    let col = Math.floor(Math.random() * (rowData.length - 2)) + 1;
-
-    for (let i = row - 1; i < row + 1; i++) {
-        rowData = rows[row];
-
-        if (rowData.charAt(col) != ' ' && rowData.charAt(col - 1) != ' ' && rowData.charAt(col + 1) != ' ') {
-            return randomOpenLocation();
-        }
+	for(j = -1; j < 3; j++) {
+	    let checkC = adjust(colT+i, rows[0].length);
+             if(rows[checkR] && rows[checkR].charAt(checkC) != ' ') {
+                return randomOpenLocation();
+             }
+	}
     }
-    return [(col * scale) - window.innerWidth / 2, (row * scale) - window.innerHeight / 2, 0];
+    return [x,y,0];
 
 }
 

@@ -10,10 +10,29 @@
     <script src="dist/main.js"></script>
 </head>
 
-<body onload="game()">
+<body>
+  <div id="intro">
+  <h1>Flowtroids</h1>
+  A game deeply inspired by the awsome game xPilot, using the tournament map from that exactly game. Open source is awsome. <a href="https://github.com/knubo/flowtroids">Fork me on Github!</a>
+  <p>
+  Name your spaceship: <input id="shipname" onkeypress="entercheck(event);"> <input type="button" value="play" onclick='document.getElementById("intro").style.display = "none";game();'>
+  </p>
 
+  </div>
+  
 <div id="connect" style="position:absolute;z-index: 300;top:300px;left:100px;">
     <input id="peerid"><input type="button" value="connect" onclick="connect(null)">PeerId: <div id="mypeerid" style="background:white;color:black;"></div>
 </div>
+
+<script>
+  document.getElementById("connect").style.visibility = "hidden";
+  document.getElementById("shipname").focus();
+
+  function entercheck(e) {
+    if(e.keyCode == 13) {
+       document.getElementById("intro").style.display = "none";game();
+    }
+  }
+</script>
 </body>
 </html>
