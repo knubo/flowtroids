@@ -8,8 +8,6 @@ var canvas;
 var shipMaxFuel;
 var shipMaxBullets;
 
-var BX = window.innerWidth / 2;
-var BY = window.innerHeight / 2;
 
 function init() {
     var xmlHttp = new XMLHttpRequest();
@@ -67,6 +65,18 @@ function makeShipPolygon(colSystem, px, py, rotation) {
         rotation);
 }
 
+function adjust(n, m) {
+    if (n > m) {
+       n -= m;
+    }
+    if (n < 0) {
+       n += m;
+    }
+
+    return n;
+}
+
+
 
 function parseMapData(graphics, trans, particles) {
 
@@ -82,34 +92,34 @@ function parseMapData(graphics, trans, particles) {
 
     graphics.lineStyle(1, 0xFFFFFF, 1);
 
+    let bullets = [];
 
     let greens = {};
     particles.forEach(function (p) {
-        let rowP = Math.floor((p.y + (window.innerHeight / 2)) / scale);
-        let colP = Math.floor((p.x + (window.innerWidth / 2)) / scale);
+        let rowP = Math.floor(p.y / scale);
+        let colP = Math.floor(p.x / scale);
 
-        if (rowP > rows.length) {
-            rowP -= rows.length;
-        }
-        if (rowP < 0) {
-            rowP += rows.length;
-        }
+	rowP = adjust(rowP, rows.length);
+        colP = adjust(colP, rows[0].length);
 
-        if (colP > rows[0].length) {
-            colP -= rows[0].length;
-        }
-        if (colP < 0) {
-            colP += rows[0].length;
-        }
+	if(p.c > 3) {
+           for(let i = -1; i < 2; i++) {
+               for(let j = -1; j < 2; j++) {
 
-        if (rows[rowP] && colP > 0 && rows[rowP].charAt(colP) != ' ' && p.c > 3) {
-            greens[rowP + "-" + colP] = 1;
-            p.c = 3;
-        }
+   		  let ycheck = adjust(rowP+i, rows.length);
+		  let xcheck = adjust(colP+j, rows[0].length);
+
+                  if (rows[ycheck] && rows[ycheck].charAt(xcheck) != ' ') {
+		     greens[ycheck + "-" + xcheck] = 1;
+		  }
+	      }
+          }
+	}
 
         if (p.b) {
-            //TODO bullet collision
-            //colSystem.createPolygon(bx, by, [[0,0], [1,0], [1,1], [0,1]]);
+            let bullet = colSystem.createPolygon(p.x - trans[0], p.y - trans[1], [ [0,0], [1,0], [1,1], [0,1] ]);
+	    bullet.isABullet = p;
+	    bullets.push(bullet);
         }
 
     });
@@ -147,9 +157,6 @@ function parseMapData(graphics, trans, particles) {
 
             graphics.lineStyle(1, 0xFFFFFF, 1);
 
-            if (greens[lRow + "-" + lCol]) {
-//                graphics.lineStyle(1, 0xFF00FF, 1);
-            }
 
             let testForCollision = false;
 
@@ -158,6 +165,11 @@ function parseMapData(graphics, trans, particles) {
                 py + row * scale > (window.innerHeight / 2) - scale * 2 && py + row * scale < (window.innerHeight / 2) + scale) {
                 testForCollision = true;
             }
+
+           if (greens[lRow + "-" + lCol]) {
+               testForCollision = true;
+            }
+
 
             switch (c) {
                 case 'x':
@@ -219,9 +231,24 @@ function parseMapData(graphics, trans, particles) {
     for (const wall of potentials) {
         if (shipPoly.collides(wall, result)) {
             collision = wall.isAPlatform ? -1 : 1;
+
+	    if(wall.isABullet) {
+		collision = 2;
+		wall.isABullet.c = 0;
+	    }
         }
     }
 
+    bullets.forEach(function (b) {
+       const pots = b.potentials();
+	
+       for (const wall of pots) {
+          if (b.collides(wall, result)) {
+	      b.isABullet.c = 0;
+	  }
+       }
+    });
+    
     if (debugCrash) {
         if (!canvas) {
             canvas = document.createElement('canvas');

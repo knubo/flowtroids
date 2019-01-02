@@ -8,7 +8,7 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
-let gravity = 0.1;
+let gravity = 0.0;
 
 var connections = [];
 var peer;
@@ -61,6 +61,17 @@ function drawOtherShip(data) {
             broadcastConnections();
         }
 
+        return;
+    }
+
+    if (command == "P") {
+        particles.push({
+            "x": parseFloat(parts[0]),
+            "y": parseFloat(parts[1]),
+            "vx": parseFloat(parts[2]),
+            "vy": parseFloat(parts[3]),
+            "c": 40
+        });
         return;
     }
 
@@ -220,8 +231,8 @@ function addBullet() {
 
     let vx = Math.cos(ship.rotation - 1.57075);
     let vy = Math.sin(ship.rotation - 1.57075);
-    var x = shipLocation[0] + vx * 10;
-    var y = shipLocation[1] + vy * 15;
+    var x = shipLocation[0] + vx * 10 + window.innerWidth / 2;
+    var y = shipLocation[1] + vy * 15 + window.innerHeight / 2;
 
     var speed = 12;
 
@@ -246,7 +257,7 @@ function addParticles() {
         var y = shipLocation[1] - ship.vy + randy;
         var vx2 = ship.vx + 3 * vx + randx;
         var vy2 = ship.vy + 3 * vy + randy;
-        var items = {"x": x, "y": y, "vx": vx2, "vy": vy2, "c": 40};
+        var items = {"x": x + (window.innerWidth / 2), "y": (y + window.innerHeight / 2), "vx": vx2, "vy": vy2, "c": 40};
         particles.push(items);
 
         connections.forEach(function (conn) {
@@ -260,11 +271,10 @@ let dx;
 function gameLoop(delta) {
     dx += delta;
 
-    if (delta < 0.1) {
-        if (dx < 1.2) {
+        if (dx < 1.1) {
             return;
         }
-    }
+
 
     dx = 0;
 
@@ -334,7 +344,7 @@ function gameLoop(delta) {
             ship.fuel = shipMaxFuel;
         }
 
-        if (crash == 1) {
+        if (crash > 0) {
             gameStopped = new Date();
             addExplodingShip();
         }
@@ -361,8 +371,8 @@ function gameLoop(delta) {
 }
 
 function addExplodingShip() {
-    var x = shipLocation[0];
-    var y = shipLocation[1];
+    var x = shipLocation[0] + window.innerWidth / 2; 
+    var y = shipLocation[1] + window.innerHeight / 2;
 
     ship.visible = false;
     for (let i = 0; i < 100; i++) {
@@ -406,8 +416,8 @@ function animatePixels() {
         let c = p.c < 7 ? 0.3 : 1;
         particlesGraphics.lineStyle(1, p.b ? 0xFFFFFF : PIXI.utils.rgb2hex([c, c, c]), 1);
 
-        let drawX = (window.innerWidth / 2) + (p.x - shipLocation[0]);
-        let drawY = (window.innerHeight / 2) + (p.y - shipLocation[1]);
+        let drawX = (p.x - shipLocation[0]);
+        let drawY = (p.y - shipLocation[1]);
 
         particlesGraphics.moveTo(drawX, drawY);
 
