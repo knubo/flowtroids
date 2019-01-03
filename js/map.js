@@ -3,7 +3,6 @@ var rows;
 let scale = 30;
 
 
-
 var debugCrash = false;
 var canvas;
 
@@ -47,21 +46,21 @@ function randomOpenLocation() {
 
     var x = Math.random() * scale * rows[0].length;
     var y = Math.random() * scale * rows.length;
-  
-    let rowT = Math.floor( (y + (window.innerHeight / 2)) / scale);
-    let colT = Math.floor( (x + (window.innerWidth / 2)) / scale);
-      
-    for(let i = -1; i < 3; i++) {
-	let checkR = adjust(rowT+i, rows.length);
 
-	for(j = -1; j < 3; j++) {
-	    let checkC = adjust(colT+i, rows[0].length);
-             if(rows[checkR] && rows[checkR].charAt(checkC) != ' ') {
+    let rowT = Math.floor((y + (window.innerHeight / 2)) / scale);
+    let colT = Math.floor((x + (window.innerWidth / 2)) / scale);
+
+    for (let i = -1; i < 3; i++) {
+        let checkR = adjust(rowT + i, rows.length);
+
+        for (j = -1; j < 3; j++) {
+            let checkC = adjust(colT + i, rows[0].length);
+            if (rows[checkR] && rows[checkR].charAt(checkC) != ' ') {
                 return randomOpenLocation();
-             }
-	}
+            }
+        }
     }
-    return [x,y,0];
+    return [x, y, 0];
 
 }
 
@@ -73,15 +72,14 @@ function makeShipPolygon(colSystem, px, py, rotation) {
 
 function adjust(n, m) {
     if (n > m) {
-       n -= m;
+        n -= m;
     }
     if (n < 0) {
-       n += m;
+        n += m;
     }
 
     return n;
 }
-
 
 
 function parseMapData(graphics, trans, particles) {
@@ -105,27 +103,27 @@ function parseMapData(graphics, trans, particles) {
         let rowP = Math.floor(p.y / scale);
         let colP = Math.floor(p.x / scale);
 
-	rowP = adjust(rowP, rows.length);
+        rowP = adjust(rowP, rows.length);
         colP = adjust(colP, rows[0].length);
 
-	if(p.c > 3) {
-           for(let i = -1; i < 2; i++) {
-               for(let j = -1; j < 2; j++) {
+        if (p.c > 3) {
+            for (let i = -1; i < 2; i++) {
+                for (let j = -1; j < 2; j++) {
 
-   		  let ycheck = adjust(rowP+i, rows.length);
-		  let xcheck = adjust(colP+j, rows[0].length);
+                    let ycheck = adjust(rowP + i, rows.length);
+                    let xcheck = adjust(colP + j, rows[0].length);
 
-                  if (rows[ycheck] && rows[ycheck].charAt(xcheck) != ' ') {
-		     greens[ycheck + "-" + xcheck] = 1;
-		  }
-	      }
-          }
-	}
+                    if (rows[ycheck] && rows[ycheck].charAt(xcheck) != ' ') {
+                        greens[ycheck + "-" + xcheck] = 1;
+                    }
+                }
+            }
+        }
 
         if (p.b) {
-            let bullet = colSystem.createPolygon(p.x - trans[0], p.y - trans[1], [ [0,0], [1,0], [1,1], [0,1] ]);
-	    bullet.isABullet = p;
-	    bullets.push(bullet);
+            let bullet = colSystem.createPolygon(p.x - trans[0], p.y - trans[1], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+            bullet.isABullet = p;
+            bullets.push(bullet);
         }
 
     });
@@ -172,8 +170,8 @@ function parseMapData(graphics, trans, particles) {
                 testForCollision = true;
             }
 
-           if (greens[lRow + "-" + lCol]) {
-               testForCollision = true;
+            if (greens[lRow + "-" + lCol]) {
+                testForCollision = true;
             }
 
 
@@ -238,23 +236,23 @@ function parseMapData(graphics, trans, particles) {
         if (shipPoly.collides(wall, result)) {
             collision = wall.isAPlatform ? -1 : 1;
 
-	    if(wall.isABullet) {
-		collision = 2;
-		wall.isABullet.c = 0;
-	    }
+            if (wall.isABullet) {
+                collision = 2;
+                wall.isABullet.c = 0;
+            }
         }
     }
 
     bullets.forEach(function (b) {
-       const pots = b.potentials();
-	
-       for (const wall of pots) {
-          if (b.collides(wall, result)) {
-	      b.isABullet.c = 0;
-	  }
-       }
+        const pots = b.potentials();
+
+        for (const wall of pots) {
+            if (b.collides(wall, result)) {
+                b.isABullet.c = 0;
+            }
+        }
     });
-    
+
     if (debugCrash) {
         if (!canvas) {
             canvas = document.createElement('canvas');
