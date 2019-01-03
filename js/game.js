@@ -9,7 +9,7 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
-let gravity = 0.0;
+let gravity = 0.1;
 let bulletLife = 250;
 
 let myScore = 0;

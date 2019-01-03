@@ -12,7 +12,7 @@ var shipMaxBullets;
 
 function init() {
     var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET", "../maps/tournament2.map", false); // false for synchronous request
+    xmlHttp.open("GET", "maps/tournament2.map", false); // false for synchronous request
     xmlHttp.send(null);
     mapdata = xmlHttp.responseText;
 
