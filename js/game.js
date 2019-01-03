@@ -668,7 +668,7 @@ function onKeyUp(key) {
 
 function onKeyDown(key) {
     if (gameStopped) {
-        if (new Date().getTime() - gameStopped.getTime() > 5000) {
+        if (new Date().getTime() - gameStopped.getTime() > 10000) {
             gameStopped = null;
             respawn();
         }
