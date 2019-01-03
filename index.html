@@ -62,6 +62,7 @@
   Name your spaceship: <input id="shipname" onkeypress="entercheck(event);"> <input type="button" value="play" onclick='document.getElementById("intro").style.display = "none";game();'>
   </p>
 
+      Send the following URL to your friends: <span id="shareurl"></span><br/>If you want to start the game again, go to the base url, and if you need to copy the url later for sharing, exclude the &master part.
   </div>
 
 <div id="connect" style="position:absolute;z-index: 300;top:300px;left:100px;">
@@ -81,6 +82,7 @@
   document.getElementById("high_score").style.visibility = "hidden";
   document.getElementById("connect").style.visibility = "hidden";
   document.getElementById("shipname").focus();
+  connect(null);
 
   function entercheck(e) {
     if(e.keyCode == 13) {

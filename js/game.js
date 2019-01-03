@@ -9,7 +9,7 @@ var particles = [];
 let particlesGraphics;
 let bulletCount = 0;
 let mapGraphics;
-let gravity = 0.1;
+let gravity = 0.12;
 let bulletLife = 250;
 
 let myScore = 0;
@@ -237,7 +237,6 @@ function game() {
 
     document.getElementById("connect").style.visibility = "hidden";
 
-    connect(null);
 
     mapGraphics = new PIXI.Graphics();
     app.stage.addChild(mapGraphics);
@@ -295,6 +294,8 @@ function connect(peerId) {
     peer.on('open', function (id) {
         document.getElementById("mypeerid").innerHTML = id;
         console.log("Connected with:" + id);
+
+        document.getElementById("shareurl").innerHTML = location.href+"?peerid="+id;
 
         if (window.location.search.indexOf("peerid") == -1) {
             window.history.pushState("peerId", "Title", window.location + "?peerid=" + id + "&master=true");
