@@ -303,14 +303,9 @@ function connect(peerId) {
 
     });
 
-    /*
-     peer.on('error', function (err) {
-     if (peer) {
-     peer.destroy();
-     }
-     connect(null);
-     });
-     */
+    peer.on('disconnected', function() {
+        peer.reconnect();
+    });
     peer.on('connection', function (c) {
         console.log("Connect on peer " + c);
         console.log(c);
