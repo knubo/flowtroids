@@ -8,23 +8,77 @@
     <script src="js/game.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.18/peer.min.js"></script>
     <script src="dist/main.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <link href="https://fonts.googleapis.com/css?family=Orbitron" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <style>
+        #high_score {
+            font-family: 'Orbitron', sans-serif;
+            width: 400px;
+            height: 600px;
+            background-color: black;
+            color:snow;
+            position: absolute;
+            top:0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align:center;
+
+            margin: auto;
+        }
+        dl {
+            width: 100%;
+            overflow: hidden;
+            padding: 0;
+            margin: 0
+        }
+        dt {
+            float: left;
+            width: 50%;
+            /* adjust the width; make sure the total of both is 100% */
+            padding: 0 0 0 20px;
+            margin: 0;
+            text-align:left;
+        }
+        dd {
+            float: left;
+            text-align:right;
+            width: 40%;
+            /* adjust the width; make sure the total of both is 100% */
+            padding: 0 0 0 0px;
+            margin: 0
+        }
+    </style>
 </head>
 
 <body>
   <div id="intro">
   <h1>Flowtroids</h1>
-  A game deeply inspired by the awsome game xPilot, using the tournament map from that exactly game. Open source is awsome. <a href="https://github.com/knubo/flowtroids">Fork me on Github!</a>
+  A game deeply inspired by the awesome game xPilot, using the tournament map from that game. Built using open source! <a href="https://github.com/knubo/flowtroids">Fork me on Github!</a>
   <p>
   Name your spaceship: <input id="shipname" onkeypress="entercheck(event);"> <input type="button" value="play" onclick='document.getElementById("intro").style.display = "none";game();'>
   </p>
 
   </div>
-  
+
 <div id="connect" style="position:absolute;z-index: 300;top:300px;left:100px;">
     <input id="peerid"><input type="button" value="connect" onclick="connect(null)">PeerId: <div id="mypeerid" style="background:white;color:black;"></div>
 </div>
 
+  <div id="high_score"">
+      <div style="font-size:larger;margin-top:10px;">HIGH SCORES</div>
+      <dl id="scores">
+          <dt>Dummy</dt><dd>0</dd>
+      </dl>
+      <div id="countdown" style="margin-top:20px;"></div>
+  </div>
+
+
 <script>
+  document.getElementById("high_score").style.visibility = "hidden";
   document.getElementById("connect").style.visibility = "hidden";
   document.getElementById("shipname").focus();
 

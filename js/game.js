@@ -2,6 +2,7 @@ let app;
 let ship;
 let shipLocation = [0, 0, 0];
 
+let playerName;
 var otherShips = {};
 
 var particles = [];
@@ -10,6 +11,9 @@ let bulletCount = 0;
 let mapGraphics;
 let gravity = 0.0;
 let bulletLife = 250;
+
+let myScore = 0;
+let scores = {};
 
 var connections = [];
 var peer;
@@ -72,7 +76,8 @@ function drawOtherShip(data) {
             "vx": parseFloat(parts[2]),
             "vy": parseFloat(parts[3]),
             "b": 1,
-            "c": bulletLife
+            "c": bulletLife,
+            "uid": parts[4]
         });
         return;
     }
@@ -99,6 +104,42 @@ function drawOtherShip(data) {
             particles.push(items);
 
         }
+        return;
+    }
+
+    if (command == "H") {
+        let otherId = parts[0];
+        let uuid = parts[1];
+
+        let myKill = particles.filter(function (p) {
+                return p.uuid == uuid;
+            }).length > 0;
+
+        if (!scores[otherId]) {
+            scores[otherId] = {"score": 0, "name": parts[2]};
+        }
+
+        if (myKill) {
+            myKill.c = 0;
+            myScore += 2;
+            sendScore();
+            toast("You killed " + (scores[otherId] ? scores[otherId].name : "?"));
+        } else {
+            toast((scores[otherId] ? scores[otherId].name : "?") + " was killed.");
+        }
+    }
+
+    if (command == "Z") {
+        if (!scores[parts[0]]) {
+            scores[parts[0]] = {"score": parseInt(parts[1])};
+        } else {
+            scores[parts[0]].score = parseInt(parts[1]);
+        }
+
+        if(!scores[parts[0]].name) {
+            scores[parts[0]].name = parts[2];
+        }
+
         return;
     }
 
@@ -141,8 +182,21 @@ function drawOtherShip(data) {
     sprite.rotation = parseFloat(parts[3]);
 }
 
+function showScores() {
+    scores[playerName] = {"name": playerName, "score": myScore};
+    let sortedScores = Object.values(scores).sort(function (a, b) {
+        return b.score - a.score;
+    });
+
+    document.getElementById("scores").innerHTML = sortedScores.map(function (s) {
+        return "<dt>" + s.name + "</dt><dd>" + s.score + "</dd>"
+    }).join("\n");
+    document.getElementById("high_score").style.visibility = "visible";
+
+}
 
 function respawn() {
+    document.getElementById("high_score").style.visibility = "hidden";
     ship.vx = 0;
     ship.vy = 0;
     ship.rotation = 0;
@@ -155,7 +209,7 @@ function respawn() {
 }
 
 function game() {
-
+    playerName = document.getElementById("shipname").value;
     app = new PIXI.Application({width: window.innerWidth - 20, height: window.innerHeight - 20});
 
     document.body.appendChild(app.view);
@@ -198,7 +252,7 @@ function connectWithId(connid) {
     }
 
     console.log("Opening to " + connid);
-    let conn = peer.connect(connid);
+    let conn = peer.connect(connid, {"metadata": {"playerName": playerName}});
 
     connections.push(conn);
 
@@ -257,8 +311,17 @@ function connect(peerId) {
      });
      */
     peer.on('connection', function (c) {
-        console.log("Connect on peer " + c.id);
+        console.log("Connect on peer " + c);
+        console.log(c);
 
+        let thisConnectionsPlayerName = "???";
+        let peer = c.peer;
+        if (c.metadata && c.metadata.playerName) {
+            thisConnectionsPlayerName = c.metadata.playerName;
+            toast("Player " + c.metadata.playerName + " connected.");
+        }
+
+        scores[peer] = {"score": 0, "name": thisConnectionsPlayerName};
 
         connections.push(c);
 
@@ -267,7 +330,26 @@ function connect(peerId) {
         c.on('data', function (data) {
             drawOtherShip(data);
         });
+
+        c.on('close', function () {
+            if (otherShips[peer]) {
+                otherShips[peer].visible = false;
+            }
+            toast("Player " + thisConnectionsPlayerName + " left the game.");
+        })
     });
+}
+
+function toast(msg) {
+    Toastify({
+        text: msg,
+        duration: 3000,
+        newWindow: false,
+        close: false,
+        gravity: "bottom", // `top` or `bottom`
+        positionLeft: true, // `true` or `false`
+        backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+    }).showToast();
 }
 
 function uuidv4() {
@@ -292,7 +374,16 @@ function addBullet() {
 
     let uuid = uuidv4();
 
-    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": bulletLife, "b": 1, "uuid": uuid};
+    var items = {
+        "x": x,
+        "y": y,
+        "vx": vx * speed,
+        "vy": vy * speed,
+        "c": bulletLife,
+        "b": 1,
+        "uuid": uuid,
+        "myBullet": 1
+    };
     particles.push(items);
 
     connections.forEach(function (conn) {
@@ -410,6 +501,8 @@ function gameLoop(delta) {
 
         if (crash > 0) {
             gameStopped = new Date();
+            myScore--;
+            sendScore();
             addExplodingShip();
         }
         if (crash == -1) {
@@ -430,13 +523,34 @@ function gameLoop(delta) {
     mapGraphics.beginFill(0x0000EE);
     mapGraphics.drawRect(window.innerWidth - 38, 108, 18, -((ship.fuel / shipMaxFuel) * 98));
     mapGraphics.endFill();
+}
 
+function sendBulletScore(bullet) {
+
+    /* Crash by own bullet - no score for this */
+    if (particles.filter(function (p) {
+            return p.myBullet;
+        }).length > 0) {
+        return;
+    }
+
+    connections.forEach(function (conn) {
+        conn.send("H," + peer.id + "," + bullet.uuid + "," + playerName);
+    });
+
+}
+
+function sendScore() {
+    connections.forEach(function (conn) {
+        conn.send("Z," + peer.id + "," + myScore + "," + playerName);
+    });
 
 }
 
 function addExplodingShip() {
     var x = shipLocation[0] + window.innerWidth / 2;
     var y = shipLocation[1] + window.innerHeight / 2;
+
 
     ship.visible = false;
     for (let i = 0; i < 100; i++) {
@@ -454,6 +568,30 @@ function addExplodingShip() {
         conn.send("E," + peer.id + "," + (shipLocation[0] + window.innerWidth / 2) + "," + (shipLocation[1] + window.innerHeight / 2));
     });
 
+    window.setTimeout(function () {
+        showScores();
+    }, 5000);
+
+    document.getElementById("countdown").innerHTML = "";
+
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "5..."
+    }, 5000);
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "5...4..."
+    }, 6000);
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "5...4...3..."
+    }, 7000);
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "5...4...3...2..."
+    }, 8000);
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "5...4...3...2...1..."
+    }, 9000);
+    window.setTimeout(function () {
+        document.getElementById("countdown").innerHTML = "press any key to play again"
+    }, 10000);
 }
 
 function drawOtherShips() {

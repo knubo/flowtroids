@@ -239,6 +239,7 @@ function parseMapData(graphics, trans, particles) {
             if (wall.isABullet) {
                 collision = 2;
                 wall.isABullet.c = 0;
+                sendBulletScore(wall.isABullet);
             }
         }
     }
