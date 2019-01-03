@@ -270,6 +270,13 @@ function connect(peerId) {
     });
 }
 
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 function addBullet() {
     if (bulletCount > shipMaxBullets) {
         return;
@@ -283,11 +290,13 @@ function addBullet() {
 
     var speed = 12;
 
-    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": bulletLife, "b": 1};
+    let uuid = uuidv4();
+
+    var items = {"x": x, "y": y, "vx": vx * speed, "vy": vy * speed, "c": bulletLife, "b": 1, "uuid": uuid};
     particles.push(items);
 
     connections.forEach(function (conn) {
-        conn.send("B," + x + "," + y + "," + (vx * speed) + "," + (vy * speed));
+        conn.send("B," + x + "," + y + "," + (vx * speed) + "," + (vy * speed) + "," + uuid);
     });
 }
 
